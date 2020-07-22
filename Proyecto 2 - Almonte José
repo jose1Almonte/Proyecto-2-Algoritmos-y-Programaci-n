@@ -1,0 +1,471 @@
+class Barco():
+  def __init__(self, ship_name, route, departure, cost, rooms, capacity, sells):
+    self.ship_name = ship_name
+    self.route = route
+    self.departure = departure
+    self.cost = cost
+    self.rooms = rooms
+    self.capacity = capacity
+    self.sells = sells
+    self.pasillopisouno = self.rooms.get('simple')[0]
+    self.habitacionpisouno = self.rooms.get('simple')[1]
+    self.pasillopisodos = self.rooms.get('premium')[0]
+    self.habitacionpisodos = self.rooms.get('premium')[1]
+    self.pasillopisotres = self.rooms.get('vip')[0]
+    self.habitacionpisotres = self.rooms.get('vip')[1]
+
+
+#'''Aqui quiero buscar la forma de agregarle información a la habitación cost, premium y vip'''
+
+''' 
+
+MODULO 1:
+
+1.-ship_name del barco
+2.-route del barco (Ej: Fort Lauderdale - Las Bahamas - St. Martin)
+3.-La fecha de salida (Ej: 22/09/2020)
+4.-El coste del boleto por tipo de habitación (cost, Premium, VIP)
+5.-Cada crucero posee 3 pisos (1 piso por tipo de habitación) y la API provee información referente a la cantidad de habitaciones y pasillos por cada piso
+6.-La capacidad de cada tipo de habitación
+
+MODULO 2
+
+
+
+'''
+
+import requests
+
+def api_get_caribbean():
+  url = 'https://saman-caribbean.vercel.app/api/cruise-ships'
+  response = requests.request('GET', url)
+  return response.json()
+
+def creador_info_tiexti(dics):
+  '''
+  creador_info_tiexti(dics) recibe el nombre del archivo TXT que se desea crear y escribe en el mismo la información proveniente de la API pasada pór la función api_get_caribbean()
+
+  Arguments:
+
+  dics = 'info.txt'
+  
+  '''
+  while True:
+    try:    
+      with open('info.txt', 'w') as f:
+        for i in range(0, len(api_get_caribbean())):
+          api = api_get_caribbean()[i]
+          f.write('Ship--> {} \n Route--> {} \n Departure--> {} \n Cost--> {} \n Rooms--> {} \n Capacity--> {} \n Sells--> {} \n \n'.format(api.get('name'), api.get('route'),
+          api.get('departure'), api.get('cost'), api.get('rooms'), api.get('capacity'), api.get('sells')))
+      break
+    except:
+      print('Error al recibir el formato de la API')
+      break
+
+def split(arr, size=7):
+  '''
+  split recibe como parámetros una lista con 'x' cantidad de elementos y también recibe un número 'int' que indica el número de elementos que se desea tener en cada sublista. Devolviendo al final una lista de listas (Con la información actual debería de devolver 4 listas con 7 elementos cada una)
+
+  Arguments:
+
+  arr = la lista original(completa)
+  size = el número de elementos que se desea tener en cada sublista: '7 porque cada crucero posee 7 elementos que los describen'
+
+  '''
+  arrs = []
+  while len(arr) > size:
+      pice = arr[:size]
+      arrs.append(pice)
+      arr   = arr[size:]
+  arrs.append(arr)
+  return arrs
+
+
+def lector_info_tiexti(file_name):
+  '''
+  Recibe como parámetro el archivo info.txt y devuelve uno o varios objetos 'Barco' (Esto depende de la cantidad de información obtenidas(Actualmente son 4 barcos con 7 características cada uno))
+
+  Arguments:
+
+  file_name = info.txt
+  
+  '''
+  yeah = []
+  with open(file_name) as f:
+    for line in f:
+      datos = line.split('--> ')
+      yeah.append(datos[1])
+  wow = split(yeah, 7)
+  dato = []
+  for i in wow:
+    barco = Barco(i[0], i[1], i[2], i[3], i[4], i[5], i[6])
+    dato.append(barco)
+  return dato
+
+def paraBarco(api):
+  '''paraBarco recibe como parámetro api_get_caribbean() y devuelve una lista con los objetos de Barco() encontrados'''
+  lista_objs = []
+  ok = split(api, 7)
+  for i in api:
+    u = Barco(i.get('name'), i.get('route'), i.get('departure'), i.get('cost'), i.get('rooms'), i.get('capacity'), i.get('sells'))
+    lista_objs.append(u)
+  return lista_objs
+
+def creador_mod2_tiexti(file_name, barco):
+  '''
+  creador_mod2_tiexti(file_name,barco) recibe como parámetro el nombre que se desea tener el archivo a crear y una lista de objetos que servirán para escribir en el archivo mencionado.
+
+  Arguments:
+
+  file_name = 'rooms(fromAPIwithoutchange).txt'
+  barco = lista de objetos Barco() 
+  '''
+  with open(file_name, 'w') as f:
+    for i in barco:
+      f.write('SHIP NAME--> {}\n Pasillos piso uno--> {}\n Habitaciones piso uno--> {}\n Pasillos piso dos--> {}\n Habitaciones piso dos--> {}\n Pasillos piso tres--> {}\n Habitaciones piso tres--> {} \n \n'.format(i.ship_name,i.pasillopisouno,i.habitacionpisouno, i.pasillopisodos, i.habitacionpisodos, i.pasillopisotres, i.habitacionpisotres))  
+
+def chequeador(file_name):
+  '''
+  Recibe el nombre de un archivo llamado 'rooms(fromyou).txt' que si dicho archivo existe, retornará True; de lo contrario, retornará False
+
+  file_name: 'rooms(fromyou).txt' es un archivo que solo existirá si en anteriores ocasiones se compraron habitaciones; es decir, la primera vez que se corra este programa para comprar boletos, retornará False
+  '''
+  try:
+    with open(file_name, 'r') as f:
+      return True
+  except FileNotFoundError as e:
+    return False
+  except IOError as e:
+    return False
+
+def cantidadhabs(qstn3, qstn4, capacity, habs):
+  '''
+  cantidadhabs recibe como parámetro qstn3 y qstn4 con la finalidad de evaluar los datos ingresados por el usuario para terminar devolviendo True (Si todo sale bien y está habilitado a comprar el/los boleto/s) o de lo contrario: False
+  
+  Arguments:
+
+  qstn3 = tipo de habitación seleccianda(1(simple), 2(premium) ó 3 (vip))
+
+  qstn4 = cantidad de boletos a comprar
+  capacity = diccionario cuyo valor es la capacidad de las habitaciones
+
+  habs = diccionario cuyo value es una lista con información de la cantidad de pasillos y habitaciones
+  '''
+  try:
+    if qstn3 == 1:
+      if habs.get('simple')[1] >= qstn4 and qstn4 > 0:
+        if habs.get('simple')[1] > 0:
+          return True
+    if qstn3 == 2:
+      if habs.get('premium')[1] >= qstn4 and qstn4 > 0:
+        if habs.get('premium')[1] > 0:
+          return True
+    if qstn3 == 3:
+      if habs.get('vip')[1] >= qstn4 and qstn4 > 0:
+        if habs.get('vip')[1] > 0:
+          return True
+  except:
+    return False
+  
+def esprimo(numero):
+  '''
+  recibe como parámetro un número y devuelve True si es primo, y False de lo contrario
+
+  Arguments:
+
+  numero = cedula ingresada por el usuario
+  '''
+  okay = False
+  contador = 0
+  for i in range(1, numero + 1):
+    if numero%i == 0:
+      contador += 1
+      okay = True
+    if contador > 2:
+      okay = False
+      break
+  return okay
+
+def esabundante(numero):
+  '''
+  recibe como parámetro un número y devuelve True si es abundante, y False de lo contrario
+
+  Arguments:
+
+  numero = cedula ingresada por el usuario
+  '''
+  suma = []
+  for i in range(1,numero):
+    if numero%i == 0:
+      suma.append(i)
+  if sum(suma) > numero:
+    return True
+  else:
+    return False
+
+def esdiscapacitado(disc):
+  '''
+  esdiscapacitado devuelve True si disc = 'y', de lo contrario, devuelve False:
+
+  Arguments:
+
+  disc = Lo ingresa el usuario (str)
+  '''
+  if disc == 'y':
+    return True
+  else:
+    return False
+
+def create_newtiexti(file_name, nombre, cedula, edad, qstn3, qstn4, barquito):
+  '''
+  create_newtiexti recibe como parámetro el nombre del archivo 'rooms(fromyou).txt' que va a estar modificándose cada vez que se compren boletos
+
+  file_name = 'rooms(fromyou).txt'
+  nombre = lo ingresa el usuario (str)
+  cedula = lo ingresa el usuario (int)
+  edad = lo ingresa el usuario (int)
+  qstn3 = 1(simple) 2(premium) 3(vip)
+  qstn4 = cantidad de boletos comprados (int)
+  barquito = objeto barco utilizandose
+  '''
+  while True:
+    try:
+      disc = input('''
+      Posee discapacidad? (y ó n):
+      > ''')
+      disc.lower()
+      break
+    except:
+      print('''
+      Ingresó un dato no válido''')
+  if esdiscapacitado(disc) == False:
+    if qstn3 == 1:
+      while True:
+        try:
+          cap = int(input('''
+          Indique cuantas personas se quedarán en la habitación incluyendose a usted Sr/a {} ({} como máximo): 
+          > '''.format(nombre, barquito.capacity.get('simple'))))
+          if cap <= barquito.capacity.get('simple') and cap > 0:
+            break
+        except:
+          print('la capacidad máxima de habitación es {}'.format(barquito.capacity.get('simple')))
+      ok = barquito.cost.get('simple')
+      if edad > 65:
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, simple, {cap}, {0}\n') 
+      elif esabundante(cedula):       
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, simple, {cap}, {ok - ((15*ok)/100) + ((16*ok)/100)}\n') 
+      elif esprimo(cedula):
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, simple, {cap}, {ok - ((10*ok)/100) + ((16*ok)/100)}\n') 
+      else:  
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, simple, {cap}, {ok + ((16*ok)/100)}\n')
+    if qstn3 == 2:
+      while True:
+        try:
+          cap = int(input('Indique cuantas personas se quedarán en la habitación incluyendose a usted Sr/a {} ({} como máximo): '.format(nombre, barquito.capacity.get('premium'))))
+          if cap <= barquito.capacity.get('premium') and cap > 0:
+            break
+        except:
+          print('la capacidad máxima de habitación es {}'.format(barquito.capacity.get('premium')))
+      ok = barquito.cost.get('premium')
+      if edad > 65:
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {0}\n') 
+      elif esabundante(cedula):       
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok - ((15*ok)/100) + ((16*ok)/100)}\n') 
+      elif esprimo(cedula):
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok - ((10*ok)/100) + ((16*ok)/100)}\n') 
+      else:  
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok + ((16*ok)/100)}\n')
+    if qstn3 == 3:
+      while True:
+        try:
+          cap = int(input('Indique cuantas personas se quedarán en la habitación incluyendose a usted Sr/a {} ({} como máximo): '.format(nombre, barquito.capacity.get('vip'))))
+          if cap <= barquito.capacity.get('vip') and cap > 0:
+            break
+        except:
+          print('la capacidad máxima de habitación es {}'.format(barquito.capacity.get('vip')))
+      ok = barquito.cost.get('premium')
+      if edad > 65:
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {0}\n') 
+      elif esabundante(cedula):       
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok - ((15*ok)/100) + ((16*ok)/100)}\n') 
+      elif esprimo(cedula):
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok - ((10*ok)/100) + ((16*ok)/100)}\n') 
+      else:  
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok + ((16*ok)/100)}\n')
+  else:
+    if qstn3 == 1:
+      while True:
+        try:
+          cap = int(input('''
+          Indique cuantas personas se quedarán en la habitación incluyendose a usted Sr/a {} ({} como máximo): 
+          > '''.format(nombre, barquito.capacity.get('simple'))))
+          if cap <= barquito.capacity.get('simple') and cap > 0:
+            break
+        except:
+          print('la capacidad máxima de habitación es {}'.format(barquito.capacity.get('simple')))
+      ok = barquito.cost.get('simple')
+      if edad > 65:
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, simple, {cap}, {0}\n') 
+      elif esabundante(cedula):       
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, simple, {cap}, {ok - ((15*ok)/100) + ((16*ok)/100) - ((30*ok)/100)}\n') 
+      elif esprimo(cedula):
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, simple, {cap}, {ok - ((10*ok)/100) + ((16*ok)/100) - ((30*ok)/100)}\n') 
+      else:  
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, simple, {cap}, {ok + ((16*ok)/100) - ((30*ok)/100)}\n')
+    if qstn3 == 2:
+      while True:
+        try:
+          cap = int(input('Indique cuantas personas se quedarán en la habitación incluyendose a usted Sr/a {} ({} como máximo): '.format(nombre, barquito.capacity.get('premium'))))
+          if cap <= barquito.capacity.get('premium') and cap > 0:
+            break
+        except:
+          print('la capacidad máxima de habitación es {}'.format(barquito.capacity.get('premium')))
+      ok = barquito.cost.get('premium')
+      if edad > 65:
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {0}\n') 
+      elif esabundante(cedula):       
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok - ((15*ok)/100) + ((16*ok)/100) - ((30*ok)/100)}\n') 
+      elif esprimo(cedula):
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok - ((10*ok)/100) + ((16*ok)/100) - ((30*ok)/100)}\n') 
+      else:  
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok + ((16*ok)/100) - ((30*ok)/100)}\n')
+    if qstn3 == 3:
+      while True:
+        try:
+          cap = int(input('Indique cuantas personas se quedarán en la habitación incluyendose a usted Sr/a {} ({} como máximo): '.format(nombre, barquito.capacity.get('vip'))))
+          if cap <= barquito.capacity.get('vip') and cap > 0:
+            break
+        except:
+          print('la capacidad máxima de habitación es {}'.format(barquito.capacity.get('vip')))
+      ok = barquito.cost.get('premium')
+      if edad > 65:
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {0}\n') 
+      elif esabundante(cedula):       
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok - ((15*ok)/100) + ((16*ok)/100) - ((30*ok)/100)}\n') 
+      elif esprimo(cedula):
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok - ((10*ok)/100) + ((16*ok)/100) - ((30*ok)/100)}\n') 
+      else:  
+        with open(file_name, 'a') as f:
+          f.write(f'{barquito.ship_name}, {nombre}, {cedula}, {edad}, premium, {cap}, {ok + ((16*ok)/100) - ((30*ok)/100)}\n')
+    
+
+
+
+def main():
+  creador_info_tiexti('info.txt')
+  #lector_info_tiexti('info.txt')
+  '''for i in lector_info_tiexti('info.txt'):
+    if 'El Dios de los Mares' in i.ship_name:
+      print(i.ship_name)
+      print(i.cost)
+      print(i.rooms)'''
+  barco = paraBarco(api_get_caribbean())
+  creador_mod2_tiexti('rooms(fromAPIwithoutchange).txt', barco)
+  if chequeador('rooms(fromyou).txt'):
+    with open('rooms(fromyou).txt', 'r') as y:
+      for i in y:
+        print(i)
+  else:
+    qstn = input(''' ¡Hola muy buenas! ¡Bienvenido a Saman_Caribbean!
+
+    Usted, como cliente: ¿Cómo desea realizar su búsqueda para la compra de su boleto?:
+
+    1. Por nombre del barco. 
+    2. En base a mi destino.
+    > ''')
+    if qstn == '1':
+      print('''
+      ¡Excelente opción! 
+      
+      A continuación le solicitamos que escriba sin equivocaciones el nombre del barco que nuestra empresa puede ofrecerle (Las mayúsculas y minúsculas no importan): ''')
+      contador = 0
+      for i in barco:
+        contador += 1
+        print(f'''
+        {contador}. {i.ship_name}''')
+      qstn2 = str(input('''
+      Por favor escriba el nombre del barco:
+      
+      > '''))
+      for i in barco:
+        if qstn2.lower() == i.ship_name.lower():
+          qstn3 = int(input('''
+          Antes de proseguir con la venta de las habitaciones, es de suma importancia informarle que disponemos de tres tipos:
+
+          
+          1. Habitaciones SENCILLAS:
+          
+          Disponibles: {}
+          
+          Capacidad: {} personas por habitación
+
+          2.Habitaciones PREMIUMS:
+          
+          Disponibles: {}
+          
+          Capacidad: {} personas por habitación
+
+          3. Habitaciones VIPS:
+          
+          Disponibles: {}
+          
+          Capacidad: {} personas por habitación
+
+
+          ¿Cuál de las tres opciones desea comprar? (1,2 ó 3)
+          
+          > '''.format(i.rooms.get('simple')[1],i.capacity.get('simple') ,i.rooms.get('premium')[1],i.capacity.get('premium'),i.rooms.get('vip')[1], i.capacity.get('vip'))))
+          qstn4 = int(input('''
+          ¡Muchas gracias! pronto evaluaremos su respuesta. 
+          
+          Pero por el momento quisieramos saber la cantidad de boletos (1 boleto por habitación) que desearía comprar (Por favor ingréselo usando el teclado numérico)
+          
+          > '''))
+          
+          if cantidadhabs(qstn3, qstn4, i.capacity, i.rooms):
+            
+            print('''
+            Muchas gracias, ya hemos validado sus datos''')
+            
+            for k in range(1, qstn4+1):
+              nombre = str(input('''
+              Ahora necesitamos que nos indique su nombre:
+              > '''))
+              cedula = int(input('''
+              ¡Muchas gracias!
+
+              Ahora por favor, ingrese su cédula:
+              > '''))
+              edad = int(input('''
+              ¿Cuál es su edad? (Por favor, escríbala en el teclado numérico)
+              > '''))
+              create_newtiexti('rooms(fromyou).txt', nombre, cedula, edad, qstn3, qstn4, i)
+
+
+
+
+main()
+
